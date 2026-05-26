@@ -9,16 +9,16 @@ import {
   type Locale,
 } from "@/lib/store";
 import { useT, type DictKey } from "@/lib/i18n";
+import { loadAgents } from "@/lib/tauri";
 
 type Props = { onClose: () => void; initialSection?: SectionId };
 
-export type SectionId = "agent" | "deploy" | "language" | "publish";
+export type SectionId = "agent" | "language" | "publish";
 
 const SECTIONS: Array<{ id: SectionId; labelKey: DictKey; hintKey: DictKey }> = [
   { id: "agent", labelKey: "settings.section.agent.label", hintKey: "settings.section.agent.hint" },
-  { id: "deploy", labelKey: "settings.section.deploy.label", hintKey: "settings.section.deploy.hint" },
   { id: "language", labelKey: "settings.section.language.label", hintKey: "settings.section.language.hint" },
-  { id: "publish" as SectionId, labelKey: undefined as any, hintKey: undefined as any },
+  { id: "publish" as SectionId, labelKey: "settings.section.publish.label" as DictKey, hintKey: "settings.section.publish.hint" as DictKey },
 ];
 
 const PROTOCOL_KEY: Record<AgentInfo["protocol"], { key: DictKey; tone: "ok" | "warn" }> = {
@@ -115,10 +115,10 @@ export function SettingsModal({ onClose, initialSection = "agent" }: Props) {
                   }`}
                 >
                   <div className={`text-[13.5px] font-medium ${active ? "text-[var(--ink)]" : "text-[var(--ink-soft)]"}`}>
-                    {s.id === "publish" ? "Publish" : t(s.labelKey)}
+                    {t(s.labelKey)}
                   </div>
                   <div className="text-[11px] text-[var(--ink-faint)] mt-0.5">
-                    {s.id === "publish" ? "API endpoint & key" : t(s.hintKey)}
+                    {t(s.hintKey)}
                   </div>
                 </button>
               );
@@ -127,7 +127,6 @@ export function SettingsModal({ onClose, initialSection = "agent" }: Props) {
 
           <div className="flex-1 min-w-0 overflow-y-auto px-7 py-6">
             {section === "agent" && <AgentSection />}
-            {section === "deploy" && <DeploySection />}
             {section === "language" && <LanguageSection />}
             {section === "publish" && <PublishSection />}
           </div>
@@ -164,11 +163,10 @@ function AgentSection() {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch("/api/agents", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { agents: AgentInfo[] };
-      setAgents(data.agents);
-      const installed = data.agents.filter((a) => a.available);
+      const { agents, error } = await loadAgents();
+      if (error) throw new Error(error);
+      setAgents(agents);
+      const installed = agents.filter((a) => a.available);
       if (!installed.find((a) => a.id === selected) && installed.length) {
         setSelectedAgent(installed[0].id);
       }
@@ -567,6 +565,7 @@ function PublishSection() {
   const setPublishApiKey = useStore((s) => s.setPublishApiKey);
   const [testResult, setTestResult] = useState<"ok" | "fail" | null>(null);
   const [testing, setTesting] = useState(false);
+  const t = useT();
 
   // Auto-fill from env vars on first mount if store values are empty
   useEffect(() => {
@@ -598,10 +597,10 @@ function PublishSection() {
     <div>
       <div className="mb-4">
         <h3 className="text-[17px] font-semibold text-[var(--ink)]">
-          Publish Settings
+          {t("settings.publish.title")}
         </h3>
         <p className="mt-1 text-[12.5px] text-[var(--ink-mute)] leading-relaxed">
-          Configure the API endpoint and key for publishing blog drafts.
+          {t("settings.publish.subtitle")}
         </p>
       </div>
       <div
@@ -609,7 +608,7 @@ function PublishSection() {
         style={{ background: "var(--paper)", border: "1px solid var(--line-faint)" }}
       >
         <label className="block text-[11px] uppercase tracking-[0.14em] text-[var(--ink-faint)] mb-1">
-          API URL
+          {t("settings.publish.apiUrl")}
         </label>
         <input
           type="text"
@@ -624,7 +623,7 @@ function PublishSection() {
           }}
         />
         <label className="block text-[11px] uppercase tracking-[0.14em] text-[var(--ink-faint)] mb-1">
-          API Key
+          {t("settings.publish.apiKey")}
         </label>
         <input
           type="password"
@@ -645,224 +644,21 @@ function PublishSection() {
             className="rounded-lg px-3 py-1.5 text-[11px] font-medium disabled:opacity-40"
             style={{ background: "var(--ink)", color: "var(--paper)" }}
           >
-            {testing ? "Testing..." : "Test Connection"}
+            {testing ? t("settings.publish.testing") : t("settings.publish.testConnection")}
           </button>
           {testResult === "ok" && (
-            <span className="text-[10.5px]" style={{ color: "var(--green)" }}>Connection OK</span>
+            <span className="text-[10.5px]" style={{ color: "var(--green)" }}>{t("settings.publish.connectionOk")}</span>
           )}
           {testResult === "fail" && (
-            <span className="text-[10.5px]" style={{ color: "var(--red)" }}>Connection failed</span>
+            <span className="text-[10.5px]" style={{ color: "var(--red)" }}>{t("settings.publish.connectionFailed")}</span>
           )}
         </div>
         <div className="mt-3 text-[10.5px] text-[var(--ink-mute)] leading-snug">
-          The API key is sent as <code className="px-1 rounded bg-[var(--surface)] border border-[var(--line-faint)]">X-API-Key</code> header.
-          Articles are published as drafts (status=draft).
+          {t("settings.publish.apiKeyHint")}
         </div>
       </div>
     </div>
   );
 }
 
-function DeploySection() {
-  const t = useT();
-  return (
-    <div>
-      <div className="mb-4">
-        <h3 className="text-[17px] font-semibold text-[var(--ink)]">
-          {t("settings.deploy.title")}
-        </h3>
-        <p className="mt-1 text-[12.5px] text-[var(--ink-mute)] leading-relaxed">
-          {t("settings.deploy.subtitle")}
-        </p>
-      </div>
-      <VercelDeployConfig />
-      <ComingSoonProvider />
-    </div>
-  );
-}
 
-function VercelDeployConfig() {
-  const t = useT();
-  const [token, setToken] = useState("");
-  const [teamSlug, setTeamSlug] = useState("");
-  const [configured, setConfigured] = useState(false);
-  const [tokenMask, setTokenMask] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [savedAt, setSavedAt] = useState<number | null>(null);
-  const [err, setErr] = useState<string | null>(null);
-
-  const load = async () => {
-    try {
-      const res = await fetch("/api/deploy/config?provider=vercel");
-      if (!res.ok) return;
-      const data = await res.json();
-      setConfigured(!!data.configured);
-      setTokenMask(data.tokenMask || "");
-      // Show the mask as the input value when configured so the user sees
-      // something other than an empty box. They can replace it to update.
-      setToken(data.tokenMask || "");
-      setTeamSlug(data.teamSlug || "");
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  };
-
-  useEffect(() => {
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const onSave = async () => {
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/deploy/config?provider=vercel", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: token.trim(), teamSlug: teamSlug.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      setConfigured(!!data.configured);
-      setTokenMask(data.tokenMask || "");
-      setToken(data.tokenMask || token);
-      setTeamSlug(data.teamSlug || "");
-      setSavedAt(Date.now());
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onClear = async () => {
-    if (!confirm("Clear Vercel token from ~/.huoll-editor?")) return;
-    setLoading(true);
-    setErr(null);
-    try {
-      const res = await fetch("/api/deploy/config?provider=vercel", {
-        method: "DELETE",
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
-      setToken("");
-      setTeamSlug("");
-      setConfigured(false);
-      setTokenMask("");
-      setSavedAt(null);
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div
-      className="mb-3 rounded-2xl p-4"
-      style={{ background: "var(--paper)", border: "1px solid var(--line-faint)" }}
-    >
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div>
-          <div className="text-[13px] font-semibold text-[var(--ink)]">
-            {t("settings.deploy.vercel.title")}
-          </div>
-          {configured && (
-            <div className="text-[10.5px] text-[var(--green)] mt-0.5">
-              ● {t("settings.deploy.configured")}
-            </div>
-          )}
-        </div>
-        <a
-          href="https://vercel.com/account/tokens"
-          target="_blank"
-          rel="noreferrer noopener"
-          className="text-[10.5px] text-[var(--coral)] hover:underline shrink-0"
-        >
-          vercel.com/account/tokens ↗
-        </a>
-      </div>
-      <label className="block text-[11px] uppercase tracking-[0.14em] text-[var(--ink-faint)] mb-1">
-        {t("settings.deploy.vercel.tokenLabel")}
-      </label>
-      <input
-        type="text"
-        value={token}
-        onChange={(e) => setToken(e.target.value)}
-        placeholder={t("settings.deploy.vercel.tokenPlaceholder")}
-        className="w-full rounded-lg px-3 py-1.5 font-mono text-[12px] outline-none mb-2"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--line)",
-          color: "var(--ink)",
-        }}
-      />
-      <label className="block text-[11px] uppercase tracking-[0.14em] text-[var(--ink-faint)] mb-1">
-        {t("settings.deploy.vercel.teamSlugLabel")}
-      </label>
-      <input
-        type="text"
-        value={teamSlug}
-        onChange={(e) => setTeamSlug(e.target.value)}
-        placeholder={t("settings.deploy.vercel.teamSlugPlaceholder")}
-        className="w-full rounded-lg px-3 py-1.5 font-mono text-[12px] outline-none mb-3"
-        style={{
-          background: "var(--surface)",
-          border: "1px solid var(--line)",
-          color: "var(--ink)",
-        }}
-      />
-      <div className="flex items-center gap-2 text-[10.5px] text-[var(--ink-mute)] mb-2 leading-snug">
-        {t("settings.deploy.vercel.tokenHint")}
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={onSave}
-          disabled={loading || !token.trim() || token.trim() === tokenMask}
-          className="rounded-lg px-3 py-1.5 text-[11px] font-medium disabled:opacity-40"
-          style={{ background: "var(--ink)", color: "var(--paper)" }}
-        >
-          {t("settings.deploy.save")}
-        </button>
-        {configured && (
-          <button
-            onClick={onClear}
-            disabled={loading}
-            className="rounded-lg px-2.5 py-1.5 text-[11px] text-[var(--ink-mute)] hover:bg-[var(--surface)] hover:text-[var(--coral)]"
-          >
-            {t("settings.deploy.clear")}
-          </button>
-        )}
-        {savedAt && (
-          <span className="text-[10.5px] text-[var(--green)]">
-            {t("settings.deploy.configured")}
-          </span>
-        )}
-      </div>
-      {err && (
-        <div className="mt-2 text-[11px]" style={{ color: "var(--red)" }}>
-          {err}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ComingSoonProvider() {
-  const t = useT();
-  return (
-    <div
-      className="rounded-2xl p-4 opacity-60"
-      style={{ background: "var(--paper)", border: "1px dashed var(--line)" }}
-    >
-      <div className="flex items-center justify-between">
-        <div className="text-[13px] font-semibold text-[var(--ink-soft)]">
-          {t("deploy.provider.cloudflarePages")}
-        </div>
-        <span className="text-[10px] uppercase tracking-wider text-[var(--ink-faint)]">
-          {t("deploy.provider.cloudflarePages.comingSoon")}
-        </span>
-      </div>
-    </div>
-  );
-}

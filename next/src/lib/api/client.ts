@@ -1,17 +1,10 @@
 "use client";
 
 /**
- * Thin HTTP client for the Django backend. Handles:
- * - Base URL from NEXT_PUBLIC_API_URL
- * - Automatic Authorization: Bearer <token>
- * - 401 refresh with stored refresh token
- * - Response format unification (backend wraps some endpoints in {code,data})
+ * Thin HTTP client. Handles response format unification.
  */
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-const ACCESS_KEY = "huoll_access_token";
-const REFRESH_KEY = "huoll_refresh_token";
 
 export class ApiError extends Error {
   constructor(
@@ -21,49 +14,6 @@ export class ApiError extends Error {
   ) {
     super(message);
   }
-}
-
-function getAccessToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_KEY);
-}
-
-function getRefreshToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem(REFRESH_KEY);
-}
-
-export function setTokens(access: string, refresh: string) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(ACCESS_KEY, access);
-  localStorage.setItem(REFRESH_KEY, refresh);
-}
-
-export function clearTokens() {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(ACCESS_KEY);
-  localStorage.removeItem(REFRESH_KEY);
-}
-
-async function doRefresh(): Promise<string | null> {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
-  try {
-    const res = await fetch(`${API_BASE}/api/v1/auth/token/refresh/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh }),
-    });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { access?: string };
-    if (body.access) {
-      localStorage.setItem(ACCESS_KEY, body.access);
-      return body.access;
-    }
-  } catch {
-    // ignore
-  }
-  return null;
 }
 
 async function parseResponse<T>(res: Response): Promise<T> {
@@ -94,26 +44,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
 
-  const token = getAccessToken();
-  if (token) {
-    headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  let res = await fetch(url, { ...options, headers });
-
-  if (res.status === 401 && getRefreshToken()) {
-    const newAccess = await doRefresh();
-    if (newAccess) {
-      headers.set("Authorization", `Bearer ${newAccess}`);
-      res = await fetch(url, { ...options, headers });
-    } else {
-      clearTokens();
-      if (typeof window !== "undefined") {
-        window.location.reload();
-      }
-    }
-  }
-
+  const res = await fetch(url, { ...options, headers });
   return parseResponse<T>(res);
 }
 

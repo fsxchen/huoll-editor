@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, selectActiveTask } from "./store";
 import { snapshotDraft } from "./drafts";
-import { createArticle, updateArticle } from "./api/articles";
+
 
 /**
  * Watches editor content and reports save status.
@@ -23,7 +23,6 @@ export function useAutosave() {
   const format = useStore((s) => selectActiveTask(s)?.format ?? "text");
   const filename = useStore((s) => selectActiveTask(s)?.filename);
   const articleIdMap = useStore((s) => s.articleIdMap);
-  const isAuthenticated = useStore((s) => s.isAuthenticated);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const lastContentRef = useRef(content);
@@ -53,34 +52,12 @@ export function useAutosave() {
         setStatus("error");
       }
 
-      // Backend sync: only when logged in and content is meaningful
-      if (isAuthenticated && activeTaskId && content.trim().length > 20 && !syncingRef.current) {
-        syncingRef.current = true;
-        const title = content.split("\n")[0].replace(/^#+\s*/, "").slice(0, 200) || "未命名草稿";
-        const articleId = articleIdMap[activeTaskId];
-        if (articleId) {
-          updateArticle(articleId, { title, content, content_type: "markdown", status: "draft" })
-            .catch(() => { /* silent fail — local is the source of truth */ })
-            .finally(() => { syncingRef.current = false; });
-        } else {
-          createArticle({ title, content, content_type: "markdown", status: "draft", doc_type: "blog" })
-            .then((article) => {
-              useStore.setState((s) => ({
-                articleIdMap: { ...s.articleIdMap, [activeTaskId]: article.id },
-                tasks: s.tasks.map((t) =>
-                  t.id === activeTaskId ? { ...t, articleId: article.id, updatedAt: Date.now() } : t
-                ),
-              }));
-            })
-            .catch(() => { /* silent fail */ })
-            .finally(() => { syncingRef.current = false; });
-        }
-      }
+
     }, 600);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [content, format, filename, activeTaskId, articleIdMap, isAuthenticated]);
+  }, [content, format, filename]);
 
   return { status, savedAt };
 }

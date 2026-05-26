@@ -5,28 +5,20 @@ import { useT } from "@/lib/i18n";
 import { TemplatePicker } from "./template-picker";
 import { ExportMenu } from "./export-menu";
 import { LayoutModeToggle } from "./layout-mode-toggle";
-import { DeployControl } from "./deploy-control";
-import { UserMenu } from "./user-menu";
+
+
 
 export function Toolbar({
   iframeRef,
   onOpenAgentPicker,
   onOpenSettings,
-  onRequestConfigureDeploy,
-  deployConfigRev,
   onPublish,
-  onOpenAuth,
-  onOpenMyArticles,
   onOpenImageGallery,
 }: {
   iframeRef: React.MutableRefObject<HTMLIFrameElement | null>;
   onOpenAgentPicker: () => void;
   onOpenSettings: () => void;
-  onRequestConfigureDeploy: () => void;
-  deployConfigRev: number;
   onPublish: () => void;
-  onOpenAuth: () => void;
-  onOpenMyArticles: () => void;
   onOpenImageGallery: () => void;
 }) {
   const agent = useStore((s) => s.selectedAgent);
@@ -106,12 +98,19 @@ export function Toolbar({
           </svg>
           Publish
         </button>
-        <DeployControl
-          onRequestConfigureDeploy={onRequestConfigureDeploy}
-          configRev={deployConfigRev}
-        />
         <ExportMenu iframeRef={iframeRef} />
-        <UserMenu onOpenAuth={onOpenAuth} onOpenMyArticles={onOpenMyArticles} onOpenImageGallery={onOpenImageGallery} />
+        <button
+          onClick={onOpenImageGallery}
+          className="grid h-9 w-9 place-items-center rounded-full border text-[var(--ink-soft)] transition-all hover:border-[var(--ink)]/30 hover:text-[var(--ink)]"
+          style={{ background: "var(--surface)", borderColor: "var(--line)" }}
+          title="Image Gallery"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <circle cx="8.5" cy="8.5" r="1.5"/>
+            <polyline points="21 15 16 10 5 21"/>
+          </svg>
+        </button>
       </div>
     </header>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { client, setTokens } from "./client";
+import { client } from "./client";
 
 export type User = {
   id: string;
@@ -28,7 +28,6 @@ export async function login(
     "/api/v1/auth/login/",
     { username, password },
   );
-  setTokens(res.tokens.access, res.tokens.refresh);
   return res;
 }
 
@@ -44,7 +43,6 @@ export async function register(payload: {
     "/api/v1/auth/register/",
     payload,
   );
-  setTokens(res.tokens.access, res.tokens.refresh);
   return res;
 }
 

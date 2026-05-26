@@ -12,7 +12,7 @@ import { DraftsMenu } from "./drafts-menu";
 import { SamplesGallery } from "./samples-gallery";
 import { FormatsGallery } from "./formats-gallery";
 import { AiPromptBar } from "./ai-prompt-bar";
-import { OutlineSidebar } from "./outline-sidebar";
+
 
 const TAB_KEY: Record<"text" | "formats" | "samples", DictKey> = {
   text: "editor.tab.text",
@@ -23,7 +23,7 @@ const TAB_KEY: Record<"text" | "formats" | "samples", DictKey> = {
 export function EditorPane() {
   const [tab, setTab] = useState<"text" | "formats" | "samples">("text");
   const [dragActive, setDragActive] = useState(false);
-  const [outlineVisible, setOutlineVisible] = useState(true);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const hydrated = usePersistHydrated();
   const content = useStore((s) => selectActiveTask(s)?.content ?? "");
@@ -152,12 +152,7 @@ export function EditorPane() {
                   <div className="text-[11px] text-[var(--ink-faint)]">{t("editor.restoring")}</div>
                 </div>
               )}
-              <OutlineSidebar
-                content={content}
-                textareaRef={textareaRef}
-                visible={outlineVisible && tab === "text"}
-                onToggle={() => setOutlineVisible((v) => !v)}
-              />
+
               <textarea
                 ref={textareaRef}
                 value={hydrated ? content : ""}

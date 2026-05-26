@@ -116,6 +116,17 @@ export interface Dict {
   "settings.deploy.save": string;
   "settings.deploy.clear": string;
   "settings.deploy.configured": string;
+  "settings.section.publish.label": string;
+  "settings.section.publish.hint": string;
+  "settings.publish.title": string;
+  "settings.publish.subtitle": string;
+  "settings.publish.apiUrl": string;
+  "settings.publish.apiKey": string;
+  "settings.publish.testConnection": string;
+  "settings.publish.testing": string;
+  "settings.publish.connectionOk": string;
+  "settings.publish.connectionFailed": string;
+  "settings.publish.apiKeyHint": string;
   "deploy.button": string;
   "deploy.button.disabled": string;
   "deploy.deploying": string;
@@ -367,7 +378,7 @@ const en: Dict = {
   "welcome.titlePart1": "Pick a local",
   "welcome.titleAccent": "code agent",
   "welcome.description":
-    "HTML Anything reuses your already-logged-in CLI session — no API key required. You can switch agents anytime from the top bar.",
+    "Huoll Editor reuses your already-logged-in CLI session — no API key required. You can switch agents anytime from the top bar.",
   "welcome.rescan": "↻ Rescan",
   "welcome.scanning": "Scanning…",
   "welcome.rescanTitle": "Run detection again",
@@ -408,7 +419,7 @@ const en: Dict = {
 
   "settings.eyebrow": "Settings",
   "settings.titlePart1": "Configure",
-  "settings.titleAccent": "HTML Anything",
+  "settings.titleAccent": "Huoll Editor",
   "settings.close": "Close (Esc)",
   "settings.done": "Done",
   "settings.section.agent.label": "Agent",
@@ -417,7 +428,7 @@ const en: Dict = {
   "settings.section.language.hint": "Interface language",
   "settings.agent.title": "Code agent",
   "settings.agent.subtitle":
-    "HTML Anything reuses your already-logged-in CLI session — no API key required.",
+    "Huoll Editor reuses your already-logged-in CLI session — no API key required.",
   "settings.language.title": "Interface language",
   "settings.language.subtitle":
     "Sets the language the app surface uses. Default is English; your choice is saved locally.",
@@ -440,6 +451,17 @@ const en: Dict = {
   "settings.deploy.save": "Save",
   "settings.deploy.clear": "Clear",
   "settings.deploy.configured": "Configured",
+  "settings.section.publish.label": "Publish",
+  "settings.section.publish.hint": "API endpoint & key",
+  "settings.publish.title": "Publish Settings",
+  "settings.publish.subtitle": "Configure the API endpoint and key for publishing blog drafts.",
+  "settings.publish.apiUrl": "API URL",
+  "settings.publish.apiKey": "API Key",
+  "settings.publish.testConnection": "Test Connection",
+  "settings.publish.testing": "Testing...",
+  "settings.publish.connectionOk": "Connection OK",
+  "settings.publish.connectionFailed": "Connection failed",
+  "settings.publish.apiKeyHint": "The API key is sent as X-API-Key header. Articles are published as drafts (status=draft).",
   "deploy.button": "Publish",
   "deploy.button.disabled": "Run Convert first",
   "deploy.deploying": "Deploying…",
@@ -689,7 +711,7 @@ const zhCN: Dict = {
   "welcome.titlePart1": "选一个本地",
   "welcome.titleAccent": "code agent",
   "welcome.description":
-    "HTML Anything 复用你已经登录的 CLI session — 不要求你再贴一遍 API Key。进入主界面后,你随时可以在顶栏切换到别的 agent。",
+    "Huoll Editor 复用你已经登录的 CLI session — 不要求你再贴一遍 API Key。进入主界面后,你随时可以在顶栏切换到别的 agent。",
   "welcome.rescan": "↻ 重新检测",
   "welcome.scanning": "扫描中…",
   "welcome.rescanTitle": "重新检测",
@@ -729,7 +751,7 @@ const zhCN: Dict = {
 
   "settings.eyebrow": "设置",
   "settings.titlePart1": "配置",
-  "settings.titleAccent": "HTML Anything",
+  "settings.titleAccent": "Huoll Editor",
   "settings.close": "关闭 (Esc)",
   "settings.done": "完成",
   "settings.section.agent.label": "Agent",
@@ -738,7 +760,7 @@ const zhCN: Dict = {
   "settings.section.language.hint": "界面语言",
   "settings.agent.title": "Code agent",
   "settings.agent.subtitle":
-    "HTML Anything 复用你已经登录的 CLI session — 不需要再贴 API Key。",
+    "Huoll Editor 复用你已经登录的 CLI session — 不需要再贴 API Key。",
   "settings.language.title": "界面语言",
   "settings.language.subtitle":
     "选择 app 界面使用的语言。默认 English; 选择会保存到本地。",
@@ -761,6 +783,17 @@ const zhCN: Dict = {
   "settings.deploy.save": "保存",
   "settings.deploy.clear": "清除",
   "settings.deploy.configured": "已配置",
+  "settings.section.publish.label": "发布",
+  "settings.section.publish.hint": "API 地址和密钥",
+  "settings.publish.title": "发布设置",
+  "settings.publish.subtitle": "配置发布博客草稿的 API 地址和密钥。",
+  "settings.publish.apiUrl": "API 地址",
+  "settings.publish.apiKey": "API 密钥",
+  "settings.publish.testConnection": "测试连接",
+  "settings.publish.testing": "测试中…",
+  "settings.publish.connectionOk": "连接成功",
+  "settings.publish.connectionFailed": "连接失败",
+  "settings.publish.apiKeyHint": "API 密钥通过 X-API-Key 请求头发送。文章将以草稿状态发布（status=draft）。",
   "deploy.button": "发布",
   "deploy.button.disabled": "请先生成 HTML",
   "deploy.deploying": "部署中…",

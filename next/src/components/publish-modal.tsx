@@ -1,9 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "@/lib/store";
-import { createArticle, updateArticle, publishArticle } from "@/lib/api/articles";
-import { uploadImage } from "@/lib/api/upload";
+import {
+  listPublishArticles,
+  createPublishArticle,
+  updatePublishArticle,
+  publishPublishArticle,
+  uploadPublishImage,
+} from "@/lib/api/publish";
 
 function extractArticleMeta(html: string): {
   title: string;
@@ -32,7 +37,8 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
   const activeTaskId = useStore((s) => s.activeTaskId);
   const task = useStore((s) => s.tasks.find((t) => t.id === s.activeTaskId));
   const articleIdMap = useStore((s) => s.articleIdMap);
-  const isAuthenticated = useStore((s) => s.isAuthenticated);
+  const publishApiUrl = useStore((s) => s.publishApiUrl);
+  const publishApiKey = useStore((s) => s.publishApiKey);
   const html = task?.html ?? "";
   const content = task?.content ?? "";
   const articleId = activeTaskId ? articleIdMap[activeTaskId] : undefined;
@@ -47,7 +53,29 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
   const [coverImage, setCoverImage] = useState("");
   const [coverDragging, setCoverDragging] = useState(false);
 
-  const canSave = title.trim().length >= 5 && status !== "saving";
+  // Ensure every task gets a stable UUID publishId for server-side dedup.
+  useEffect(() => {
+    if (activeTaskId && !task?.publishId) {
+      const uuid =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+              const r = (Math.random() * 16) | 0;
+              const v = c === "x" ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            });
+      useStore.setState((s) => ({
+        tasks: s.tasks.map((t) =>
+          t.id === activeTaskId
+            ? { ...t, publishId: uuid, updatedAt: Date.now() }
+            : t
+        ),
+      }));
+    }
+  }, [activeTaskId, task?.publishId]);
+
+  const canSave =
+    title.trim().length >= 5 && status !== "saving" && !!publishApiUrl.trim() && !!publishApiKey.trim();
 
   const handleSave = async (targetStatus: "draft" | "published") => {
     setStatus("saving");
@@ -64,11 +92,38 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
         cover_image: coverImage || undefined,
       };
 
+      const url = publishApiUrl.trim();
+      const key = publishApiKey.trim();
+
+      // Stable slug derived from the task's publishId (UUID) so the same task
+      // always maps to the same article even if localStorage is cleared.
+      const publishSlug = task?.publishId ?? "";
+
       let id = articleId;
+
+      // 1. If we already have a linked articleId locally, just update it.
+      if (!id && publishSlug) {
+        // 2. Fallback: query the server by slug to avoid duplicates.
+        try {
+          const list = await listPublishArticles(url, key, {
+            slug: publishSlug,
+            page_size: "1",
+          });
+          if (list.results.length > 0) {
+            id = list.results[0].id;
+          }
+        } catch {
+          // Ignore lookup errors and fall through to create.
+        }
+      }
+
       if (id) {
-        await updateArticle(id, payload);
+        await updatePublishArticle(url, key, id, payload);
       } else {
-        const article = await createArticle(payload);
+        const article = await createPublishArticle(url, key, {
+          ...payload,
+          slug: publishSlug || undefined,
+        });
         id = article.id;
         // Link task ↔ article
         if (activeTaskId) {
@@ -82,7 +137,7 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
       }
 
       if (targetStatus === "published" && id) {
-        await publishArticle(id);
+        await publishPublishArticle(url, key, id);
       }
 
       setStatus("published");
@@ -92,7 +147,9 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
     }
   };
 
-  if (!isAuthenticated) {
+  const missingConfig = !publishApiUrl.trim() || !publishApiKey.trim();
+
+  if (missingConfig) {
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center"
@@ -108,8 +165,8 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
             boxShadow: "0 40px 80px -20px rgba(21, 20, 15, 0.35)",
           }}
         >
-          <div className="text-[18px] font-semibold text-[var(--ink)]">请先登录</div>
-          <div className="text-[13px] text-[var(--ink-mute)]">登录后才能保存文章到后端</div>
+          <div className="text-[18px] font-semibold text-[var(--ink)]">发布未配置</div>
+          <div className="text-[13px] text-[var(--ink-mute)]">请在 Settings → Publish 中配置 API URL 和 API Key</div>
           <button onClick={onClose} className="btn-primary mt-2">关闭</button>
         </div>
       </div>
@@ -222,7 +279,7 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
                     const file = e.dataTransfer.files?.[0];
                     if (!file) return;
                     try {
-                      const res = await uploadImage(file);
+                      const res = await uploadPublishImage(publishApiUrl.trim(), publishApiKey.trim(), file);
                       setCoverImage(res.url);
                     } catch (err) {
                       setErrorMsg(err instanceof Error ? err.message : "封面上传失败");
@@ -246,7 +303,7 @@ export function PublishModal({ onClose }: { onClose: () => void }) {
                               const file = e.target.files?.[0];
                               if (!file) return;
                               try {
-                                const res = await uploadImage(file);
+                                const res = await uploadPublishImage(publishApiUrl.trim(), publishApiKey.trim(), file);
                                 setCoverImage(res.url);
                               } catch (err) {
                                 setErrorMsg(err instanceof Error ? err.message : "封面上传失败");

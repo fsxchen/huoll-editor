@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useStore, type AgentInfo } from "@/lib/store";
 import { useT, type DictKey } from "@/lib/i18n";
+import { loadAgents } from "@/lib/tauri";
 
 const PROTOCOL_KEY: Record<AgentInfo["protocol"], { key: DictKey; tone: "ok" | "warn" }> = {
   stdin: { key: "protocol.stdin", tone: "ok" },
@@ -102,11 +103,10 @@ export function WelcomeModal({ onClose }: Props) {
     setLoading(true);
     setErr(null);
     try {
-      const res = await fetch("/api/agents", { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = (await res.json()) as { agents: AgentInfo[] };
-      setAgents(data.agents);
-      const installed = data.agents.filter((a) => a.available);
+      const { agents, error } = await loadAgents();
+      if (error) throw new Error(error);
+      setAgents(agents);
+      const installed = agents.filter((a) => a.available);
       if (!installed.find((a) => a.id === selected) && installed.length) {
         setSelectedAgent(installed[0].id);
       }

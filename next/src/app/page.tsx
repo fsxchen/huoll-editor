@@ -9,11 +9,9 @@ import { WelcomeModal } from "@/components/welcome-modal";
 import { SettingsModal, type SectionId } from "@/components/settings-modal";
 import { ConvertChip } from "@/components/convert-chip";
 import { PublishModal } from "@/components/publish-modal";
-import { AuthModal } from "@/components/auth-modal";
-import { MyArticlesModal } from "@/components/my-articles-modal";
 import { ImageGalleryModal } from "@/components/image-gallery-modal";
 import { useStore, type AgentInfo } from "@/lib/store";
-import { getMe, clearTokens } from "@/lib/api";
+import { loadAgents } from "@/lib/tauri";
 
 export default function Home() {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -27,10 +25,7 @@ export default function Home() {
   const [settingsInitialSection, setSettingsInitialSection] = useState<
     SectionId | undefined
   >(undefined);
-  const [deployConfigRev, setDeployConfigRev] = useState(0);
   const [showPublish, setShowPublish] = useState(false);
-  const [showAuth, setShowAuth] = useState(false);
-  const [showMyArticles, setShowMyArticles] = useState(false);
   const [showImageGallery, setShowImageGallery] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
@@ -48,10 +43,8 @@ export default function Home() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/agents", { cache: "no-store" });
-        if (!res.ok) return;
-        const data = (await res.json()) as { agents: AgentInfo[] };
-        if (!cancelled) setAgents(data.agents);
+        const { agents } = await loadAgents();
+        if (!cancelled) setAgents(agents);
       } catch {
         // Settings / Welcome modals will retry on open.
       }
@@ -74,16 +67,7 @@ export default function Home() {
     if (!welcomeAck || !selectedAgent) setWelcomeOpen(true);
   }, [hydrated, welcomeAck, selectedAgent]);
 
-  // Restore auth state from persisted token on mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const token = localStorage.getItem("huoll_access_token");
-    if (token && !useStore.getState().isAuthenticated) {
-      getMe()
-        .then((user) => useStore.getState().login(user))
-        .catch(() => clearTokens());
-    }
-  }, []);
+
 
   return (
     <main className="relative flex h-screen flex-col">
@@ -91,14 +75,8 @@ export default function Home() {
         iframeRef={iframeRef}
         onOpenAgentPicker={() => setSettingsOpen(true)}
         onOpenSettings={() => setSettingsOpen(true)}
-        onRequestConfigureDeploy={() => {
-          setSettingsInitialSection("deploy");
-          setSettingsOpen(true);
-        }}
-        deployConfigRev={deployConfigRev}
+
         onPublish={() => setShowPublish(true)}
-        onOpenAuth={() => setShowAuth(true)}
-        onOpenMyArticles={() => setShowMyArticles(true)}
         onOpenImageGallery={() => setShowImageGallery(true)}
       />
       <div
@@ -128,8 +106,6 @@ export default function Home() {
         </div>
       </div>
       {showPublish && <PublishModal onClose={() => setShowPublish(false)} />}
-      {showAuth && <AuthModal onClose={() => setShowAuth(false)} />}
-      {showMyArticles && <MyArticlesModal onClose={() => setShowMyArticles(false)} />}
       {showImageGallery && (
         <ImageGalleryModal
           onClose={() => setShowImageGallery(false)}
@@ -151,7 +127,7 @@ export default function Home() {
           onClose={() => {
             setSettingsOpen(false);
             setSettingsInitialSection(undefined);
-            setDeployConfigRev((r) => r + 1);
+
           }}
         />
       )}
