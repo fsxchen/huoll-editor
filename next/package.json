@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next",
     "build": "next build",
-    "build:tauri": "NEXT_PUBLIC_TAURI_BUILD=1 node scripts/strip-api-routes.js && NEXT_PUBLIC_TAURI_BUILD=1 next build",
+    "build:tauri": "node scripts/strip-api-routes.js",
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
