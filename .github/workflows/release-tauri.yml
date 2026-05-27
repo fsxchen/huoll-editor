@@ -48,7 +48,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Tauri app
-        run: pnpm -F huoll-editor tauri build
+        run: pnpm -F huoll-editor exec tauri build
         env:
           NEXT_PUBLIC_TAURI_BUILD: "1"
 
